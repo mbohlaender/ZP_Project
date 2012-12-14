@@ -105,6 +105,42 @@ int get_dir(){
     return EXIT_SUCCESS;
 }
 
+//swap two contacts in contact_list
+int swap_contacts(TContact_list *contact_list, TContact *contact1, TContact *contact2){
+    if(contact1 == contact2){
+        errno = EINVAL;
+        return EXIT_FAILURE;
+    }
+    
+    if(contact1 == contact_list->first)
+        contact_list->first = contact2;
+    if(contact2 == contact_list->last)
+        contact_list->last = contact1;
+    
+    TContact *tmp = NULL;
+    
+    tmp = contact1->next;
+    
+    contact1->next = contact2->next;
+    contact2->next = tmp;
+    if(contact1->next != NULL){
+        contact1->next->prev = contact1;
+    }
+    if(contact2->next != NULL){
+        contact2->next->prev = contact2;
+    }
+    tmp = contact1->prev;
+    contact1->prev = contact2->prev;
+    contact2->prev = tmp;
+    if(contact1->prev != NULL){
+        contact1->prev->next = contact1;
+    }
+    if(contact2->prev != NULL){
+        contact2->prev->next = contact2;
+    }  
+    return EXIT_SUCCESS;
+}
+
 //insertlast parses the string and creates new contact in contact_list
 int insertlast(TContact_list *contact_list, char *line){
     char *pch = NULL;
@@ -182,6 +218,30 @@ int add_to_list(const char *argv[], TContact_list *contact_list){
         contact_list->last->next = newcontact;
         newcontact->prev = contact_list->last;
         contact_list->last = newcontact;
+    }
+    return EXIT_SUCCESS;
+}
+
+//removes contact with specified UID from list
+int remove_from_list(TContact_list *contact_list, size_t UID){
+    for(TContact *contact = contact_list->first; contact !=NULL; contact = contact->next){
+        if(UID == contact->UID){
+            if(contact == contact_list->first){
+                contact_list->first = contact->next;
+                contact->next->prev = NULL;
+                free(contact);
+            }
+            else if(contact == contact_list->last){
+                contact_list->last = contact->prev;
+                contact->prev = NULL;
+                free(contact);
+            }
+            else{
+                contact->prev->next = contact->next;
+                contact->next->prev = contact->prev;
+                free(contact);
+            }
+        }
     }
     return EXIT_SUCCESS;
 }
@@ -282,7 +342,7 @@ int get_mode(int argc, const char *argv[]){
     return EXIT_FAILURE;
 }
 
-//function print_list prints entire list
+//function print_list prints entire doubly-linked list
 int print_list(TContact_list *contact_list){
     for(TContact *contact = contact_list->first; contact !=NULL; contact = contact->next){
         printf("Name:%s Surname:%s Company:%s Mobile:%.f Email:%s Date of birth:%d.%d.%d Picture:%s\n", contact->name, contact->surname, contact->company, contact->mobile, contact->email, contact->dob.day, contact->dob.month, contact->dob.year, contact->image);
@@ -344,16 +404,17 @@ int main(int argc, const char *argv[])
     switch(get_mode(argc, argv)){
         case DEL:
             get_data(&contact_list);
-            print_list(&contact_list);
+            remove_from_list(&contact_list, atoi(argv[2]));
+            //print_list(&contact_list);
             save_csv(&contact_list);
             free_list(&contact_list);
             break;
         case ADD:
             get_data(&contact_list);
             add_to_list(argv, &contact_list);
-            print_list(&contact_list);
+            //print_list(&contact_list);
             save_csv(&contact_list);
-            generate_html(&contact_list);
+            //generate_html(&contact_list);
             free_list(&contact_list);
             break;
         case LIST:
