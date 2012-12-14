@@ -26,8 +26,8 @@ const char *HEADER =
 "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\"> <title>Contact_list</title>\n"
 "</head>\n"
 "<body>\n"
-"<table width=\"700\">\n"
-"<tr><th width=\"99\">Name</th><th width=\"99\">Surname</th><th width=\"99\">Company</th><th width=\"99\">Mobile</th><th width=\"99\">Email</th><th width=\"99\">Date of birth</th><th width=\"99\">Picture</th></tr>\n";
+"<table width=\"1000\">\n"
+"<tr><th width=\"99\">Name</th><th width=\"99\">Surname</th><th width=\"99\">Company</th><th width=\"150\">Mobile</th><th width=\"99\">Email</th><th width=\"99\">Date of birth</th><th width=\"99\">Picture</th></tr>\n";
 
 const char *FOOTER =
 "</table>\n"
@@ -69,13 +69,13 @@ typedef struct date{
 //TContact is structure for a cingle contact, part of a dualy linked list TContact_list
 typedef struct contact{
     size_t UID;
-    double mobile;
     TDate dob;
-    char name[30];
-    char surname[30];
-    char company[30];
-    char email[50];
-    char image[50];
+    char name[64];
+    char surname[64];
+    char company[64];
+    char mobile[64];
+    char email[64];
+    char image[64];
     struct contact *next;
     struct contact *prev;
 }TContact;
@@ -107,7 +107,7 @@ int get_dir(){
 
 //swap two contacts in contact_list
 int swap_contacts(TContact_list *contact_list, TContact *contact1, TContact *contact2){
-    if(contact1 == contact2){
+    if((contact1 == contact2) || (contact1 == NULL) || (contact2 == NULL)){
         errno = EINVAL;
         return EXIT_FAILURE;
     }
@@ -137,13 +137,31 @@ int swap_contacts(TContact_list *contact_list, TContact *contact1, TContact *con
     }
     if(contact2->prev != NULL){
         contact2->prev->next = contact2;
-    }  
+    }
+    return EXIT_SUCCESS;
+}
+
+int sort_list(TContact_list *contact_list){
+    size_t swapped = 1;
+    if(contact_list->first == contact_list->last)
+        return EXIT_SUCCESS;
+  
+    while(swapped){
+        for(TContact *contact = contact_list->first->next; contact !=NULL; contact = contact->next){
+            if(strcmp(contact->name, contact->prev->name) < 0){
+                swap_contacts(contact_list, contact->prev, contact);
+                swapped++;
+            }
+        }
+        swapped--;
+    }
     return EXIT_SUCCESS;
 }
 
 //insertlast parses the string and creates new contact in contact_list
 int insertlast(TContact_list *contact_list, char *line){
     char *pch = NULL;
+    
     TContact *newcontact = (TContact *)calloc(1,sizeof(TContact));
     if(newcontact == NULL){
         errno = ENOMEM;
@@ -154,21 +172,21 @@ int insertlast(TContact_list *contact_list, char *line){
     if(newcontact->UID > MAXUID)
         MAXUID = newcontact->UID;
     pch = strtok (NULL, ",");
-    strcpy(newcontact->name, pch);
+    strncpy(newcontact->name, pch, strlen(pch));
     pch = strtok (NULL, ",");
-    strcpy(newcontact->surname, pch);
+    strncpy(newcontact->surname, pch, strlen(pch));
     pch = strtok (NULL, ",");
-    strcpy(newcontact->company, pch);
+    strncpy(newcontact->company, pch, strlen(pch));
     pch = strtok(NULL, ",");
-    newcontact->mobile = atol(pch);
+    strncpy(newcontact->mobile, pch, strlen(pch));
     pch = strtok (NULL, ",");
-    strcpy(newcontact->email, pch);
+    strncpy(newcontact->email, pch, strlen(pch));
     pch = strtok (NULL, ",");
-    sscanf(pch, "%d.%d.%d", &newcontact->dob.day, (int *)&newcontact->dob.month, &newcontact->dob.year);
+    sscanf(pch, "%d/%d/%d", (int *)&newcontact->dob.month, &newcontact->dob.day, &newcontact->dob.year);
     pch = strtok(NULL, ",");
-    strcpy(newcontact->image, pch);
-    
-    if((pch = strtok(NULL, ",")) != NULL){
+    strncpy(newcontact->image, pch, strlen(pch));
+       
+    if((pch = strtok(NULL, "")) != NULL){
         free(newcontact);
         errno = ENFILE;
         return EXIT_FAILURE;
@@ -201,7 +219,7 @@ int add_to_list(const char *argv[], TContact_list *contact_list){
     strcpy(newcontact->name, argv[2]);
     strcpy(newcontact->surname, argv[3]);
     strcpy(newcontact->company, argv[4]);
-    newcontact->mobile = atol(argv[5]);
+    strcpy(newcontact->mobile, argv[5]);
     strcpy(newcontact->email, argv[6]);
     sscanf(argv[7], "%d.%d.%d", &newcontact->dob.day, (int *)&newcontact->dob.month, &newcontact->dob.year);
     strcpy(newcontact->image, "\"");
@@ -268,6 +286,7 @@ int get_line(FILE *file, char **ip){
             }
             line[index++] = ch;
         }
+    line[index] = '\0';
     }
     return EXIT_SUCCESS;
 }
@@ -345,7 +364,7 @@ int get_mode(int argc, const char *argv[]){
 //function print_list prints entire doubly-linked list
 int print_list(TContact_list *contact_list){
     for(TContact *contact = contact_list->first; contact !=NULL; contact = contact->next){
-        printf("Name:%s Surname:%s Company:%s Mobile:%.f Email:%s Date of birth:%d.%d.%d Picture:%s\n", contact->name, contact->surname, contact->company, contact->mobile, contact->email, contact->dob.day, contact->dob.month, contact->dob.year, contact->image);
+        printf("Name:%s Surname:%s Company:%s Mobile:%s Email:%s Date of birth:%d.%d.%d Picture:%s\n", contact->name, contact->surname, contact->company, contact->mobile, contact->email, contact->dob.day, contact->dob.month, contact->dob.year, contact->image);
     }
     return EXIT_SUCCESS;
 }
@@ -362,18 +381,26 @@ int free_list(TContact_list *contact_list){
 //generate_html generates a .html file from doubly-linked list contact_list
 int generate_html(TContact_list *contact_list){
     FILE * file;
-    char OUTHTML[1024];
+    char OUTHTML[1024], PATH[1024], imgpath[1024];
     
     strcpy(OUTHTML, DIR);
+    strcpy(PATH, DIR);
     strcat(OUTHTML,"/contacts.html");
-    
+    strcat(PATH, "/resources/");
+     
     file = fopen(OUTHTML, "w");
     if(file == NULL)
         return EXIT_FAILURE;
     
     fprintf(file,"%s", HEADER);
     for(TContact *contact = contact_list->first; contact !=NULL; contact = contact->next){
-        fprintf(file,"<tr><td>%s</td><td>%s</td><td>%s</td><td>%.f</td><td>%s</td><td>%d.%d.%d</td><td><img width=50 height=50 src=\"%s%s></td></tr>", contact->name, contact->surname, contact->company, contact->mobile, contact->email, contact->dob.day, contact->dob.month, contact->dob.year, DIR, contact->image+1);
+        strcpy(imgpath, PATH);
+        strcat(imgpath, contact->image);
+        if( access(imgpath, F_OK ) == -1 ){
+            strcpy(contact->image, "default.gif");
+            errno = 0;
+        }
+        fprintf(file,"<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%d.%d.%d</td><td><img width=50 height=50 src=%s%s></td></tr>", contact->name, contact->surname, contact->company, contact->mobile, contact->email, contact->dob.day, contact->dob.month, contact->dob.year, PATH, contact->image);
     }
     fprintf(file,"%s", FOOTER);
     fclose(file);
@@ -390,7 +417,7 @@ int save_csv(TContact_list *contact_list){
     
     csv = fopen(FILENAMEV, "w");
     for(TContact *contact = contact_list->first; contact !=NULL; contact = contact->next){
-        fprintf(csv, "%zd,%s,%s,%s,%.f,%s,%d.%d.%d,%s\n",contact->UID, contact->name, contact->surname, contact->company, contact->mobile, contact->email, contact->dob.day, contact->dob.month, contact->dob.year, contact->image);
+        fprintf(csv, "%ld,%s,%s,%s,%s,%s,%d/%d/%d,%s\n",contact->UID, contact->name, contact->surname, contact->company, contact->mobile, contact->email, contact->dob.month, contact->dob.day, contact->dob.year, contact->image);
     }
     fclose(csv);
     return EXIT_SUCCESS;
@@ -419,7 +446,9 @@ int main(int argc, const char *argv[])
             break;
         case LIST:
             get_data(&contact_list);
+            //sort_list(&contact_list);
             print_list(&contact_list);
+            save_csv(&contact_list);
             generate_html(&contact_list);
             free_list(&contact_list);
             break;
