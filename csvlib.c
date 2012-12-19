@@ -31,16 +31,29 @@ const char *HEADER =
 "<table width=\"1000\">\n"
 "<tr><th width=\"99\">Name</th><th width=\"99\">Surname</th><th width=\"99\">Company</th><th width=\"150\">Mobile</th><th width=\"99\">Email</th><th width=\"99\">Date of birth</th><th width=\"99\">Picture</th></tr>\n";
 
+const char *PLIST_HEADER =
+"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+"<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n"
+"<plist version=\"1.0\">\n"
+"<array>\n";
+
 const char *FOOTER =
 "</table>\n"
 "</body>\n"
 "</html>\n";
 
+const char *PLIST_FOOTER =
+"</array>\n"
+"</plist>\n";
+
 size_t MAXUID = 0;
 char DIR[1024];
 
 int get_dir(){
+    char *pch;
     getcwd(DIR, sizeof(DIR));
+    pch = strrchr(DIR, '/');
+    DIR[pch-DIR] = '\0';
     return EXIT_SUCCESS;
 }
 
@@ -158,9 +171,8 @@ int add_to_list(const char *argv[], TContact_list *contact_list){
     strcpy(newcontact->mobile, argv[5]);
     strcpy(newcontact->email, argv[6]);
     sscanf(argv[7], "%d.%d.%d", &newcontact->dob.day, (int *)&newcontact->dob.month, &newcontact->dob.year);
-    strcpy(newcontact->image, "\"");
-    strcat(newcontact->image, argv[8]);
-    strcat(newcontact->image, "\"");
+    strcat(newcontact->image, argv[2]);
+    strcat(newcontact->image, ".gif");
     newcontact->next = NULL;
     
     if(contact_list->last == NULL){
@@ -245,8 +257,8 @@ int print_single(TContact_list *contact_list, size_t UID){
     
     strcpy(OUTHTML, DIR);
     strcpy(PATH, DIR);
-    strcat(OUTHTML,"/record.html");
-    strcat(PATH, "/resources/");
+    strcat(OUTHTML,"/vystupnidata/record.html");
+    strcat(PATH, "/vstupnidata/resources/");
     
     file = fopen(OUTHTML, "w");
     if(file == NULL)
@@ -279,15 +291,14 @@ int generate_html(TContact_list *contact_list){
     
     strcpy(OUTHTML, DIR);
     strcpy(PATH, DIR);
-    strcat(OUTHTML,"/contacts.html");
-    strcat(PATH, "/resources/");
+    strcat(OUTHTML,"/vystupnidata/contacts.html");
+    strcat(PATH, "/vstupnidata/resources/");
     
     file = fopen(OUTHTML, "w");
     if(file == NULL)
         return EXIT_FAILURE;
     
     fprintf(file,"%s", HEADER);
-    
     
     while(contact != NULL){
         strcpy(imgpath, PATH);
@@ -304,13 +315,39 @@ int generate_html(TContact_list *contact_list){
     return EXIT_SUCCESS;
 }
 
+int generate_plist(TContact_list *contact_list){
+    FILE * file;
+    char OUTPLIST[1024], PATH[1024];
+    TContact *contact = contact_list->first;
+    
+    strcpy(OUTPLIST, DIR);
+    strcpy(PATH, DIR);
+    strcat(OUTPLIST,"/vystupnidata/contacts.plist");
+    strcat(PATH, "/vstupnidata/resources/");
+    
+    file = fopen(OUTPLIST, "w");
+    if(file == NULL)
+        return EXIT_FAILURE;
+    
+    fprintf(file,"%s", PLIST_HEADER);
+    
+    while(contact != NULL){
+        fprintf(file,"\t<dict>\n\t\t<key>Company</key>\n\t\t<string>%s</string>\n\t\t<key>Email</key>\n\t\t<string>%s</string>\n\t\t<key>dateofBirth</key>\n\t\t<string>%d.%d.%d</string>\n\t\t<key>firstName</key>\n\t\t<string>%s</string>\n\t\t<key>lastName</key>\n\t\t<string>%s</string>\n\t\t<key>phoneNumber</key>\n\t\t<string>%s</string>\n\t</dict>\n", contact->company, contact->email, contact->dob.day, contact->dob.month, contact->dob.year, contact->name, contact->surname, contact->mobile);
+        contact = contact->next;
+    }
+    fprintf(file,"%s", PLIST_FOOTER);
+    fclose(file);
+
+    return EXIT_SUCCESS;
+}
+
 int save_csv(TContact_list *contact_list){
     FILE * csv;
     char FILENAMEV[1024];
     TContact *contact = contact_list->first;
     
     strcpy(FILENAMEV, DIR);
-    strcat(FILENAMEV, "/contacts_copy.csv");
+    strcat(FILENAMEV, "/vystupnidata/contacts_copy.csv");
     
     csv = fopen(FILENAMEV, "w");
     
@@ -353,7 +390,7 @@ int get_data(TContact_list *contact_list){
     char FILENAME[1024];
     
     strcpy(FILENAME, DIR);
-    strcat(FILENAME, "/contacts.csv");
+    strcat(FILENAME, "/vstupnidata/contacts.csv");
     
     file = fopen(FILENAME, "r");
     if(file == NULL){
