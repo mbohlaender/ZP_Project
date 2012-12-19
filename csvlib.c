@@ -1,10 +1,17 @@
-//
-//  dlist.c.c
-//  contact_list_cmd
-//
-//  Created by Salamander on 17.12.12.
-//  Copyright (c) 2012 Salamander. All rights reserved.
-//
+/*
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+ 
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+ 
+ You should have received a copy of the GNU General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 #include "csvlib.h"
 
@@ -29,10 +36,14 @@ const char *FOOTER =
 "</body>\n"
 "</html>\n";
 
-char DIR[1024];
 size_t MAXUID = 0;
+char DIR[1024];
 
-//swap two contacts in contact_list
+int get_dir(){
+    getcwd(DIR, sizeof(DIR));
+    return EXIT_SUCCESS;
+}
+
 int swap_contacts(TContact_list *contact_list, TContact *contact1, TContact *contact2){
     if((contact1 == contact2) || (contact1 == NULL) || (contact2 == NULL)){
         errno = EINVAL;
@@ -85,7 +96,6 @@ int sort_list(TContact_list *contact_list){
     return EXIT_SUCCESS;
 }
 
-//insertlast parses the string and creates new contact in contact_list
 int insertlast(TContact_list *contact_list, char *line){
     char *pch = NULL;
     
@@ -134,7 +144,6 @@ int insertlast(TContact_list *contact_list, char *line){
     return EXIT_SUCCESS;
 }
 
-//add_to_list inserts new contact from command line to contact_list
 int add_to_list(const char *argv[], TContact_list *contact_list){
     TContact *newcontact = (TContact *)calloc(1,sizeof(TContact));
     if(newcontact == NULL){
@@ -167,7 +176,6 @@ int add_to_list(const char *argv[], TContact_list *contact_list){
     return EXIT_SUCCESS;
 }
 
-//removes contact with specified UID from list
 int remove_from_list(TContact_list *contact_list, size_t UID){
     size_t deleted = 0;
     TContact *contact = contact_list->first;
@@ -182,7 +190,7 @@ int remove_from_list(TContact_list *contact_list, size_t UID){
             }
             else if(contact == contact_list->last){
                 contact_list->last = contact->prev;
-                contact->prev = NULL;
+                contact->prev->next = NULL;
                 free(contact);
                 deleted++;
             }
@@ -199,7 +207,17 @@ int remove_from_list(TContact_list *contact_list, size_t UID){
     return EXIT_SUCCESS;
 }
 
-//function print_list prints entire doubly-linked list to stdin
+int find_in_list(TContact_list *contact_list, char *argv){
+    TContact *contact = contact_list->first;
+    while(contact != NULL){
+        if((strnstr(contact->name, argv, strlen(argv)) == NULL) && (strnstr(contact->surname, argv, strlen(argv)) == NULL) && (strnstr(contact->company, argv, strlen(argv)) == NULL) && (strnstr(contact->email, argv, strlen(argv)) == NULL))
+            remove_from_list(contact_list, contact->UID);
+        contact = contact->next;
+    }
+
+    return EXIT_SUCCESS;
+}
+
 int print_list(TContact_list *contact_list){
     TContact *contact = contact_list->first;
     while(contact != NULL){
@@ -209,7 +227,6 @@ int print_list(TContact_list *contact_list){
     return EXIT_SUCCESS;
 }
 
-//free_list deallocates memory from doubly-linked list contact_list
 int free_list(TContact_list *contact_list){
     TContact *current = NULL;
     while(contact_list->first != NULL){
@@ -220,7 +237,6 @@ int free_list(TContact_list *contact_list){
     return EXIT_SUCCESS;
 }
 
-//function print_single creates a .html output for a single contact with specific UID
 int print_single(TContact_list *contact_list, size_t UID){
     time_t now = time(NULL);
     struct tm *t = localtime(&now);FILE * file;
@@ -256,7 +272,6 @@ int print_single(TContact_list *contact_list, size_t UID){
     return EXIT_SUCCESS;
 }
 
-//generate_html generates a .html file from doubly-linked list contact_list
 int generate_html(TContact_list *contact_list){
     FILE * file;
     char OUTHTML[1024], PATH[1024], imgpath[1024];
@@ -289,7 +304,6 @@ int generate_html(TContact_list *contact_list){
     return EXIT_SUCCESS;
 }
 
-//save_csv saves the doubly-linked list to a .csv file
 int save_csv(TContact_list *contact_list){
     FILE * csv;
     char FILENAMEV[1024];
@@ -308,28 +322,6 @@ int save_csv(TContact_list *contact_list){
     return EXIT_SUCCESS;
 }
 
-
-//handle_errors is a function for dealing with errno
-int handle_errors(void){
-    switch(errno){
-        case 0:
-            return EXIT_SUCCESS;
-            break;
-        default:
-            perror("Error");
-            errno = 0;
-            return EXIT_FAILURE;
-    }
-    return EXIT_SUCCESS;
-}
-
-//get current directory
-int get_dir(){
-    getcwd(DIR, sizeof(DIR));
-    return EXIT_SUCCESS;
-}
-
-//function get_line reads *FILE and returns a pointer to a string (single line of undefined length)
 int get_line(FILE *file, char **ip){
     char *line = NULL, *tmp = NULL;
     char ch = 1;
@@ -355,7 +347,6 @@ int get_line(FILE *file, char **ip){
     return EXIT_SUCCESS;
 }
 
-//function get_data reads a file containing the .csv database and creates a doubly linked list out of the records
 int get_data(TContact_list *contact_list){
     FILE *file;
     char *line = NULL;
@@ -387,44 +378,4 @@ int get_data(TContact_list *contact_list){
     return EXIT_SUCCESS;
 }
 
-//get_mode checks params for [ --add, --delete, --list, --plist, --single ] and returns apropriate return code, on error sets errno code
-int get_mode(int argc, const char *argv[]){
-    switch(argc){
-        case 2:
-            if(strcmp (argv[1], "--list") == 0)
-                return LIST;
-            if(strcmp (argv[1], "--plist") == 0)
-                return PLIST;
-            else{
-                errno = EINVAL;
-                return EXIT_FAILURE;
-            }
-            break;
-        case 3:
-            if(strcmp (argv[1], "--delete") == 0)
-                return DEL;
-            else if(strcmp (argv[1], "--single") == 0)
-                return SIN;
-            else if(strcmp (argv[1], "--find") == 0) //not implemented
-                return FIND;
-            else{
-                errno = EINVAL;
-                return EXIT_FAILURE;
-            }
-            break;
-        case 9:
-            if(strcmp (argv[1], "--add") == 0)
-                return ADD;
-            else{
-                errno = EINVAL;
-                return EXIT_FAILURE;
-            }
-            break;
-        default:
-            errno = EINVAL;
-            return EXIT_FAILURE;
-    }
-    
-    return EXIT_SUCCESS;
-}
 

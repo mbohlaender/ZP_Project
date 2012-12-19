@@ -70,34 +70,44 @@ typedef struct contact_list{
     struct contact *last;
 }TContact_list;
 
+//insertlast parses the string and creates new contact in contact_list
 int insertlast(TContact_list *contact_list, char *line);
 
 int sort_list(TContact_list *contact_list);
 
+//swap two contacts in contact_list
 int swap_contacts(TContact_list *contact_list, TContact *contact1, TContact *contact2);
 
+//add_to_list inserts new contact from command line to contact_list
 int add_to_list(const char *argv[], TContact_list *contact_list);
 
+//removes contact with specified UID from list
 int remove_from_list(TContact_list *contact_list, size_t UID);
 
+int find_in_list(TContact_list *contact_list, char *argv);
+
+//function print_list prints entire doubly-linked list to stdin
 int print_list(TContact_list *contact_list);
 
+//free_list deallocates memory from doubly-linked list contact_list
 int free_list(TContact_list *contact_list);
 
+//save_csv saves the doubly-linked list to a .csv file
 int save_csv(TContact_list *contact_list);
 
+//generate_html generates a .html file from doubly-linked list contact_list
 int generate_html(TContact_list *contact_list);
 
+//function print_single creates a .html output for a single contact with specific UID
 int print_single(TContact_list *contact_list, size_t UID);
 
-int get_mode(int argc, const char *argv[]);
-
+//function get_data reads a file containing the .csv database and creates a doubly linked list out of the records
 int get_data(TContact_list *contact_list);
 
+//function get_line reads *FILE and returns a pointer to a string (single line of undefined length)
 int get_line(FILE *file, char **ip);
 
+//set DIR to current directory
 int get_dir();
-
-int handle_errors(void);
 
 #endif

@@ -15,6 +15,61 @@
 
 #include "csvlib.h"
 
+//handle_errors is a function for dealing with errno
+int handle_errors(void){
+    switch(errno){
+        case 0:
+            return EXIT_SUCCESS;
+            break;
+        default:
+            perror("Error");
+            errno = 0;
+            return EXIT_FAILURE;
+    }
+    return EXIT_SUCCESS;
+}
+
+//get_mode checks params for [ --add, --delete, --list, --plist, --single ] and returns apropriate return code, on error sets errno code
+int get_mode(int argc, const char *argv[]){
+    switch(argc){
+        case 2:
+            if(strcmp (argv[1], "--list") == 0)
+                return LIST;
+            if(strcmp (argv[1], "--plist") == 0)
+                return PLIST;
+            else{
+                errno = EINVAL;
+                return EXIT_FAILURE;
+            }
+            break;
+        case 3:
+            if(strcmp (argv[1], "--delete") == 0)
+                return DEL;
+            else if(strcmp (argv[1], "--single") == 0)
+                return SIN;
+            else if(strcmp (argv[1], "--find") == 0) //not implemented
+                return FIND;
+            else{
+                errno = EINVAL;
+                return EXIT_FAILURE;
+            }
+            break;
+        case 9:
+            if(strcmp (argv[1], "--add") == 0)
+                return ADD;
+            else{
+                errno = EINVAL;
+                return EXIT_FAILURE;
+            }
+            break;
+        default:
+            errno = EINVAL;
+            return EXIT_FAILURE;
+    }
+    
+    return EXIT_SUCCESS;
+}
+
 int main(int argc, const char *argv[])
 {
     TContact_list contact_list = {contact_list.first = NULL, contact_list.last = NULL};
@@ -48,6 +103,9 @@ int main(int argc, const char *argv[])
             break;
         case FIND:
             get_data(&contact_list);
+            find_in_list(&contact_list, (char *)argv[2]);
+            //print_list(&contact_list);
+            generate_html(&contact_list);
             free_list(&contact_list);
             break;
         case PLIST:
