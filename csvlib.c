@@ -49,7 +49,7 @@ const char *PLIST_FOOTER =
 size_t MAXUID = 0;
 char DIR[1024];
 
-int get_dir(){
+int get_dir(void){
     char *pch;
     getcwd(DIR, sizeof(DIR));
     pch = strrchr(DIR, '/');
@@ -194,7 +194,13 @@ int remove_from_list(TContact_list *contact_list, size_t UID){
     
     while(contact != NULL){
         if(UID == contact->UID){
-            if(contact == contact_list->first){
+            if((contact == contact_list->first) && (contact == contact_list->last)){
+                contact_list->first = NULL;
+                contact_list->last = NULL;
+                free(contact);
+                deleted++;
+            }
+            else if(contact == contact_list->first){
                 contact_list->first = contact->next;
                 contact->next->prev = NULL;
                 free(contact);
@@ -264,8 +270,6 @@ int print_single(TContact_list *contact_list, size_t UID){
     if(file == NULL)
         return EXIT_FAILURE;
     
-    printf( "%d/%d/%d\n", t->tm_mon+1, t->tm_mday, t->tm_year+1900 );
-    
     fprintf(file,"%s", SINGLE);
     
     while(contact != NULL){
@@ -276,7 +280,9 @@ int print_single(TContact_list *contact_list, size_t UID){
                 strcpy(contact->image, "default.gif");
                 errno = 0;
             }
-            fprintf(file,"<table width=\"500\" border=\"0\">\n<tr>\n<td colspan=\"2\" style=\"background-color:#A9A9A9;\">\n<h1>%s %s</h1>\n</td>\n</tr>\n<tr>\n<td style=\"background-color:#DCDCDC;width:100px;text-align:top;\"><b>Company:</b><br>%s<br><br><b>Phone number:</b><br>%s<br><br><b>Email:</b><br>%s<br><br><b>Birthday:</b><br>%d.%d.%d</td>\n<td style=\"background-color:#EEEEEE;height:200px;width:400px;text-align:top;\">\n <img width=50 height=50 src=%s%s></td>\n</tr>\n<tr>\n", contact->name, contact->surname, contact->company, contact->mobile, contact->email, contact->dob.day, contact->dob.month, contact->dob.year, PATH, contact->image);
+            if((t->tm_mon+1 == contact->dob.month) && (t->tm_mday == contact->dob.day))
+                fprintf(file,"<table width=\"400\" border=\"0\">\n<tr>\n<td colspan=\"2\" style=\"background-color:#A9A9A9;\">\n<h1>%s %s</h1>\n</td>\n</tr>\n<tr>\n<td style=\"background-color:#DCDCDC;width:100px;text-align:top;\"><b>Company:</b><br>%s<br><br><b>Phone number:</b><br>%s<br><br><b>Email:</b><br>%s<br><br><b>Birthday:</b><br>%d.%d.%d</td>\n<td style=\"background-color:#EEEEEE;height:200px;width:200px;text-align:top;\">\n <img width=200 height=200 src=%s%s></td>\n</tr>\n<tr>\n", contact->name, contact->surname, contact->company, contact->mobile, contact->email, contact->dob.day, contact->dob.month, contact->dob.year, PATH, contact->image);
+            else fprintf(file,"<table width=\"400\" border=\"0\">\n<tr>\n<td colspan=\"2\" style=\"background-color:#A9A9A9;\">\n<h1>%s %s</h1>\n</td>\n</tr>\n<tr>\n<td style=\"background-color:#DCDCDC;width:100px;text-align:top;\"><b>Company:</b><br>%s<br><br><b>Phone number:</b><br>%s<br><br><b>Email:</b><br>%s<br><br><b>Birthday:</b><br>%d.%d.%d</td>\n<td style=\"background-color:#EEEEEE;height:200px;width:200px;text-align:top;\">\n <img width=200 height=200 src=%s%s></td>\n</tr>\n<tr>\n", contact->name, contact->surname, contact->company, contact->mobile, contact->email, contact->dob.day, contact->dob.month, contact->dob.year, PATH, contact->image);
         }
         contact = contact->next;
     }

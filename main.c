@@ -15,11 +15,16 @@
 
 #include "csvlib.h"
 
-//handle_errors is a function for dealing with errno
+///handle_errors is a function for dealing with errno
+///@return EXIT_SUCCESS or EXIT_FAILURE
 int handle_errors(void){
     switch(errno){
         case 0:
             return EXIT_SUCCESS;
+            break;
+        case 2:
+            fprintf(stderr, "Input file 'contacts.csv' not found.\n");
+            errno = 0;
             break;
         default:
             perror("Error");
@@ -29,7 +34,10 @@ int handle_errors(void){
     return EXIT_SUCCESS;
 }
 
-//get_mode checks params for [ --add, --delete, --list, --plist, --single ] and returns apropriate return code, on error sets errno code
+///get_mode checks params for [ --add, --delete, --list, --plist, --single ] and returns apropriate return code, on error sets errno code
+///@param argc
+///@param argv
+///@return on success DEL/ADD/LIST/PLIST/FIND/SIN, on failure EXIT_FAILURE
 int get_mode(int argc, const char *argv[]){
     switch(argc){
         case 2:
@@ -54,7 +62,7 @@ int get_mode(int argc, const char *argv[]){
                 return EXIT_FAILURE;
             }
             break;
-        case 9:
+        case 8:
             if(strcmp (argv[1], "--add") == 0)
                 return ADD;
             else{
@@ -80,18 +88,20 @@ int main(int argc, const char *argv[])
             get_data(&contact_list);
             remove_from_list(&contact_list, atoi(argv[2]));
             save_csv(&contact_list);
+            generate_html(&contact_list);
             free_list(&contact_list);
             break;
         case ADD:
             get_data(&contact_list);
             add_to_list(argv, &contact_list);
+            sort_list(&contact_list);
             save_csv(&contact_list);
+            generate_html(&contact_list);
             free_list(&contact_list);
             break;
         case LIST:
             get_data(&contact_list);
             sort_list(&contact_list);
-            print_list(&contact_list);
             save_csv(&contact_list);
             generate_html(&contact_list);
             free_list(&contact_list);
@@ -104,16 +114,14 @@ int main(int argc, const char *argv[])
         case FIND:
             get_data(&contact_list);
             find_in_list(&contact_list, (char *)argv[2]);
-            //print_list(&contact_list);
             generate_html(&contact_list);
             free_list(&contact_list);
             break;
         case PLIST:
             get_data(&contact_list);
             sort_list(&contact_list);
-            //print_list(&contact_list);
             save_csv(&contact_list);
-            //generate_plist(&contact_list);
+            generate_plist(&contact_list);
             free_list(&contact_list);
             break;
         default:
