@@ -62,6 +62,14 @@ int get_mode(int argc, const char *argv[]){
                 return EXIT_FAILURE;
             }
             break;
+        case 4:
+            if(strcmp (argv[1], "--remove") == 0)
+                return DELN;
+            else{
+                errno = EINVAL;
+                return EXIT_FAILURE;
+            }
+            break;
         case 8:
             if(strcmp (argv[1], "--add") == 0)
                 return ADD;
@@ -102,6 +110,7 @@ int main(int argc, const char *argv[])
         case LIST:
             get_data(&contact_list);
             sort_list(&contact_list);
+            print_list(&contact_list);
             save_csv(&contact_list);
             generate_html(&contact_list);
             free_list(&contact_list);
@@ -120,10 +129,15 @@ int main(int argc, const char *argv[])
         case PLIST:
             get_data(&contact_list);
             sort_list(&contact_list);
-            save_csv(&contact_list);
             generate_plist(&contact_list);
             free_list(&contact_list);
             break;
+        case DELN:
+            get_data(&contact_list);
+            delete_by_name(&contact_list, (char *)argv[2], (char *)argv[3]);
+            save_csv(&contact_list);
+            generate_html(&contact_list);
+            free_list(&contact_list);
         default:
             handle_errors();
             return EXIT_FAILURE;

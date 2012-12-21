@@ -225,10 +225,22 @@ int remove_from_list(TContact_list *contact_list, size_t UID){
     return EXIT_SUCCESS;
 }
 
+int delete_by_name(TContact_list *contact_list, char *name, char *surname){
+    TContact *contact = contact_list->first;
+    size_t deleted = 0;
+    
+    while(contact != NULL){
+        if((strcasecmp(name, contact->name) == 0) && (strcasecmp(surname, contact->surname) == 0) && deleted == 0)
+            remove_from_list(contact_list, contact->UID);
+        contact = contact->next;
+    }
+    return EXIT_SUCCESS;
+}
+
 int find_in_list(TContact_list *contact_list, char *argv){
     TContact *contact = contact_list->first;
     while(contact != NULL){
-        if((strnstr(contact->name, argv, strlen(argv)) == NULL) && (strnstr(contact->surname, argv, strlen(argv)) == NULL) && (strnstr(contact->company, argv, strlen(argv)) == NULL) && (strnstr(contact->email, argv, strlen(argv)) == NULL))
+        if((strcasestr(contact->name, argv) == NULL) && (strcasestr(contact->surname, argv) == NULL) && (strcasestr(contact->company, argv) == NULL) && (strcasestr(contact->email, argv) == NULL))
             remove_from_list(contact_list, contact->UID);
         contact = contact->next;
     }
@@ -281,11 +293,12 @@ int print_single(TContact_list *contact_list, size_t UID){
                 errno = 0;
             }
             if((t->tm_mon+1 == contact->dob.month) && (t->tm_mday == contact->dob.day))
-                fprintf(file,"<table width=\"400\" border=\"0\">\n<tr>\n<td colspan=\"2\" style=\"background-color:#A9A9A9;\">\n<h1>%s %s</h1>\n</td>\n</tr>\n<tr>\n<td style=\"background-color:#DCDCDC;width:100px;text-align:top;\"><b>Company:</b><br>%s<br><br><b>Phone number:</b><br>%s<br><br><b>Email:</b><br>%s<br><br><b>Birthday:</b><br>%d.%d.%d</td>\n<td style=\"background-color:#EEEEEE;height:200px;width:200px;text-align:top;\">\n <img width=200 height=200 src=%s%s></td>\n</tr>\n<tr>\n", contact->name, contact->surname, contact->company, contact->mobile, contact->email, contact->dob.day, contact->dob.month, contact->dob.year, PATH, contact->image);
+                fprintf(file,"<table width=\"400\" border=\"0\">\n<tr>\n<td colspan=\"2\" style=\"background-color:#A9A9A9;\">\n<h1>%s %s</h1>\n</td>\n</tr>\n<tr>\n<td style=\"background-color:#DCDCDC;width:100px;text-align:top;\"><b>Company:</b><br>%s<br><br><b>Phone number:</b><br>%s<br><br><b>Email:</b><br>%s<br><br><b>Birthday:</b><br>%d.%d.%d</td>\n<td style=\"background-color:#EEEEEE;height:200px;width:200px;text-align:top;\">\n <img width=200 height=200 src=%s%s></td>\n</tr>\n<tr>\n<td colspan=\"2\" style=\"background-color:#FFA500;text-align:center;\">\nIt's %s's birthday today !</td>\n</tr>\n", contact->name, contact->surname, contact->company, contact->mobile, contact->email, contact->dob.day, contact->dob.month, contact->dob.year, PATH, contact->image, contact->name);
             else fprintf(file,"<table width=\"400\" border=\"0\">\n<tr>\n<td colspan=\"2\" style=\"background-color:#A9A9A9;\">\n<h1>%s %s</h1>\n</td>\n</tr>\n<tr>\n<td style=\"background-color:#DCDCDC;width:100px;text-align:top;\"><b>Company:</b><br>%s<br><br><b>Phone number:</b><br>%s<br><br><b>Email:</b><br>%s<br><br><b>Birthday:</b><br>%d.%d.%d</td>\n<td style=\"background-color:#EEEEEE;height:200px;width:200px;text-align:top;\">\n <img width=200 height=200 src=%s%s></td>\n</tr>\n<tr>\n", contact->name, contact->surname, contact->company, contact->mobile, contact->email, contact->dob.day, contact->dob.month, contact->dob.year, PATH, contact->image);
         }
         contact = contact->next;
     }
+    fprintf(file,"%s", FOOTER);
     fclose(file);
     return EXIT_SUCCESS;
 }
@@ -353,7 +366,7 @@ int save_csv(TContact_list *contact_list){
     TContact *contact = contact_list->first;
     
     strcpy(FILENAMEV, DIR);
-    strcat(FILENAMEV, "/vystupnidata/contacts_copy.csv");
+    strcat(FILENAMEV, "/vstupnidata/contacts.csv");
     
     csv = fopen(FILENAMEV, "w");
     

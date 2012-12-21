@@ -31,7 +31,8 @@ enum retval{
     SIN,
     LIST,
     FIND,
-    PLIST
+    PLIST,
+    DELN
 };
 
 ///enumerator for listing months
@@ -112,6 +113,13 @@ int remove_from_list(TContact_list *contact_list, size_t UID);
 ///@param *char searched string
 ///@return on success function removes contacts not containing searched string from 'contact_list' and returns EXIT_SUCCESS
 int find_in_list(TContact_list *contact_list, char *argv);
+
+///finds and deletes contacts by name
+///@param TContact_list header of dualy linked list
+///@param *char contact name
+///@param *char contact surname
+///@return on success function removes contact from 'contact_list' and returns EXIT_SUCCESS, on failure function returns EXIT_FAILURE
+int delete_by_name(TContact_list *contact_list, char *name, char *surname);
 
 ///function print_list prints entire doubly-linked list to stdout
 ///@param TContact_list header of dualy linked list
